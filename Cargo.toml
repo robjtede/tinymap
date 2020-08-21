@@ -3,6 +3,10 @@ name = "tinymap"
 version = "0.1.0"
 authors = ["not_a_seagull <jtnunley01@gmail.com>"]
 edition = "2018"
+description = "A map structure that stores its data on the stack"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/not-a-seagull/tinymap"
+homepage = "https://github.com/not-a-seagull/tinymap#readme"
 
 [dependencies]
 tinyvec = { version = "0.4.1", features = ["nightly_const_generics"] }
