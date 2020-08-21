@@ -6,11 +6,14 @@
 #![allow(incomplete_features)]
 #![feature(const_generics)]
 #![feature(const_in_array_repeat_expressions)]
+
 #![warn(clippy::pedantic)]
+#![allow(clippy::redundant_pattern_matching)] // I'm trying to reduce the amount of LLVM IR output
+
 #![no_std]
 
-use core::{cmp::Ordering, fmt, mem};
-use tinyvec::ArrayVec;
+use core::{cmp::Ordering, fmt, iter, mem};
+use tinyvec::{ArrayVec, ArrayVecIterator};
 
 // A node in the binary tree making up the map.
 struct Node<K, V> {
@@ -588,6 +591,29 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     }
 }
 
+/// A consuming iterator for instances of `TinyMap`.
+#[repr(transparent)]
+pub struct TinyMapIterator<K, V, const N: usize> {
+    inner: ArrayVecIterator<[Option<Node<K, V>>; N]>,
+}
+
+impl<K, V, const N: usize> Iterator for TinyMapIterator<K, V, N> {
+    type Item = (K, V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.find_map(|node| match node {
+            None => None,
+            Some(node) => Some(node.kv),
+        })
+    }
+
+    #[inline]
+    #[must_use]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, self.inner.size_hint().1)
+    }
+}
+
 impl<K: PartialOrd, V, const N: usize> Default for TinyMap<K, V, N> {
     #[inline]
     fn default() -> Self {
@@ -612,17 +638,19 @@ impl<K: PartialOrd + fmt::Debug, V: fmt::Debug, const N: usize> fmt::Debug for T
     }
 }
 
-impl<K: PartialOrd, V, const N: usize> core::iter::IntoIterator for TinyMap<K, V, N> {
+impl<K: PartialOrd, V, const N: usize> iter::IntoIterator for TinyMap<K, V, N> {
     type Item = (K, V);
-    type Iterator = tinyvec::ArrayVecIterator<[Self::Item; N]>;
+    type IntoIter = TinyMapIterator<K, V, N>;
 
     #[inline]
-    fn into_iter(self) -> Self::Iterator {
-        self.arena.into_iter()
+    fn into_iter(self) -> Self::IntoIter {
+        TinyMapIterator {
+            inner: self.arena.into_iter(),
+        }
     }
 }
 
-impl<K: Ord, V, const N: usize> core::iter::Extend<(K, V)> for TinyMap<K, V, N> {
+impl<K: Ord, V, const N: usize> iter::Extend<(K, V)> for TinyMap<K, V, N> {
     #[inline]
     fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
         iter.into_iter().for_each(|(k, v)| {
@@ -631,7 +659,7 @@ impl<K: Ord, V, const N: usize> core::iter::Extend<(K, V)> for TinyMap<K, V, N> 
     }
 }
 
-impl<K: Ord, V, const N: usize> core::iter::FromIterator<(K, V)> for TinyMap<K, V, N> {
+impl<K: Ord, V, const N: usize> iter::FromIterator<(K, V)> for TinyMap<K, V, N> {
     #[inline]
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         let mut map = TinyMap::new();
