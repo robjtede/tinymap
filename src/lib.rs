@@ -5,6 +5,7 @@
 
 #![allow(incomplete_features)]
 #![feature(const_generics)]
+#![feature(const_in_array_repeat_expressions)]
 #![warn(clippy::pedantic)]
 #![no_std]
 
@@ -12,8 +13,7 @@ use core::{cmp::Ordering, fmt, mem};
 use tinyvec::ArrayVec;
 
 // A node in the binary tree making up the map.
-#[doc(hidden)]
-pub struct Node<K, V> {
+struct Node<K, V> {
     kv: (K, V),
     children: [Option<usize>; 2],
 }
@@ -76,6 +76,23 @@ pub struct TinyMap<K: PartialOrd, V, const N: usize> {
     root: Option<usize>,
 }
 
+macro_rules! unwrap_tpn {
+    ($self: expr, $e: expr) => {{
+        match $self.try_push_node($e) {
+            Ok(u) => Some(u),
+            Err(n) => {
+                let Node { kv, .. } = n;
+                return Err(kv);
+            }
+        }
+    }};
+}
+
+enum ChildType {
+    Left,
+    Right,
+}
+
 impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     /// Create a new [`TinyMap`].
     ///
@@ -91,12 +108,9 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn new() -> Self
-    where
-        [Option<Node<K, V>>; N]: Default,
-    {
+    pub fn new() -> Self {
         Self {
-            arena: ArrayVec::new(),
+            arena: ArrayVec::from_array_len([None; N], 0),
             root: None,
         }
     }
@@ -233,6 +247,52 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
         }
     }
 
+    #[inline]
+    fn insert_from_root(
+        &mut self,
+        mut node: Node<K, V>,
+        mut current: usize,
+    ) -> Result<Option<V>, (K, V)>
+    where
+        K: Ord,
+    {
+        let mut next;
+        loop {
+            let cmp_node = self.node_at(current).unwrap();
+            let ct = match cmp_node.kv.0.cmp(&node.kv.0) {
+                Ordering::Less => {
+                    next = cmp_node.children[0];
+                    ChildType::Left
+                }
+                Ordering::Greater => {
+                    next = cmp_node.children[1];
+                    ChildType::Right
+                }
+                Ordering::Equal => {
+                    mem::swap(&mut self.node_at_mut(current).unwrap().kv.1, &mut node.kv.1);
+                    return Ok(Some(node.kv.1));
+                }
+            };
+
+            match next {
+                None => {
+                    let index = unwrap_tpn!(self, node);
+                    let cmp_node_mut = self.node_at_mut(current).unwrap();
+                    let slot = match ct {
+                        ChildType::Left => &mut cmp_node_mut.children[0],
+                        ChildType::Right => &mut cmp_node_mut.children[1],
+                    };
+                    *slot = index;
+
+                    return Ok(None);
+                }
+                Some(next) => {
+                    current = next;
+                }
+            }
+        }
+    }
+
     /// Insert a node into this binary tree. This function will return the value previously
     /// in the key's slot, if applicable.
     ///
@@ -276,24 +336,7 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     where
         K: Ord,
     {
-        macro_rules! unwrap_tpn {
-            ($self: expr, $e: expr) => {{
-                match self.try_push_node($e) {
-                    Ok(u) => Some(u),
-                    Err(n) => {
-                        let Node { kv, .. } = n;
-                        return Err(kv);
-                    }
-                }
-            }};
-        }
-
-        enum ChildType {
-            Left,
-            Right,
-        }
-
-        let mut node = Node {
+        let node = Node {
             kv: (key, value),
             children: [None; 2],
         };
@@ -304,43 +347,7 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
                 self.root = unwrap_tpn!(self, node);
                 Ok(None)
             }
-            Some(mut current) => {
-                let mut next;
-                loop {
-                    let cmp_node = self.node_at(current).unwrap();
-                    let ct = match cmp_node.kv.0.cmp(&node.kv.0) {
-                        Ordering::Less => {
-                            next = cmp_node.children[0];
-                            ChildType::Left
-                        }
-                        Ordering::Greater => {
-                            next = cmp_node.children[1];
-                            ChildType::Right
-                        }
-                        Ordering::Equal => {
-                            mem::swap(&mut self.node_at_mut(current).unwrap().kv.1, &mut node.kv.1);
-                            return Ok(Some(node.kv.1));
-                        }
-                    };
-
-                    match next {
-                        None => {
-                            let index = unwrap_tpn!(self, node);
-                            let cmp_node_mut = self.node_at_mut(current).unwrap();
-                            let slot = match ct {
-                                ChildType::Left => &mut cmp_node_mut.children[0],
-                                ChildType::Right => &mut cmp_node_mut.children[1],
-                            };
-                            *slot = index;
-
-                            return Ok(None);
-                        }
-                        Some(next) => {
-                            current = next;
-                        }
-                    }
-                }
-            }
+            Some(root) => self.insert_from_root(node, root),
         }
     }
 
@@ -393,7 +400,10 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     /// assert_eq!(removed.0, "kill");
     /// ```
     #[inline]
-    pub fn remove_entry(&mut self, key: &K) -> Option<(K, V)> {
+    pub fn remove_entry(&mut self, key: &K) -> Option<(K, V)>
+    where
+        K: Ord,
+    {
         const ERR_MSG: &str = "Invalid binary tree path";
 
         enum ParentChildRelation {
@@ -419,22 +429,16 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
                         [None, None] => None,
                         [Some(child), None] | [None, Some(child)] => Some(child),
                         [Some(child1), Some(child2)] => {
-                            // use child1 as a pivot and put child2 on the left or the right
-                            let (c1, c2) =
-                                (self.node_at(child1).unwrap(), self.node_at(child2).unwrap());
-                            let comparison = c1.kv.0.partial_cmp(&c2.kv.0);
-                            match comparison {
-                                None => return None,
-                                Some(Ordering::Equal) => unreachable!("This should not happen!"),
-                                Some(Ordering::Less) => {
-                                    self.node_at_mut(child1).unwrap().children[0] = Some(child2);
-                                    Some(child1)
-                                }
-                                Some(Ordering::Greater) => {
-                                    self.node_at_mut(child1).unwrap().children[1] = Some(child2);
-                                    Some(child1)
-                                }
-                            }
+                            // take the node out of child2
+                            let mut reloc_node = None;
+                            mem::swap(&mut reloc_node, &mut self.arena[child2]);
+
+                            // insert child2 under child1
+                            self.insert_from_root(reloc_node.unwrap(), child1)
+                                .unwrap_or_else(|_| panic!("This should not happen!"));
+
+                            // use child1 as the replacement node
+                            Some(child1)
                         }
                     };
 
@@ -470,7 +474,10 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     /// Remove a value from the binary tree. This is similar to `remove_entry`, but it does not
     /// keep the value.
     #[inline]
-    pub fn remove(&mut self, key: &K) -> Option<V> {
+    pub fn remove(&mut self, key: &K) -> Option<V>
+    where
+        K: Ord,
+    {
         match self.remove_entry(key) {
             Some((_k, v)) => Some(v),
             None => None,
@@ -545,11 +552,9 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     /// Iterate over the values of this binary tree in arbitrary order.
     #[inline]
     pub fn values(&self) -> impl Iterator<Item = &V> {
-        self.arena.iter().filter_map(|node| {
-            match node.as_ref() {
-                None => None,
-                Some(Node { kv: (_, ref v), .. }) => Some(v),
-            }
+        self.arena.iter().filter_map(|node| match node.as_ref() {
+            None => None,
+            Some(Node { kv: (_, ref v), .. }) => Some(v),
         })
     }
 
@@ -568,10 +573,7 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     }
 }
 
-impl<K: PartialOrd, V, const N: usize> Default for TinyMap<K, V, N>
-where
-    [Option<Node<K, V>>; N]: Default,
-{
+impl<K: PartialOrd, V, const N: usize> Default for TinyMap<K, V, N> {
     #[inline]
     fn default() -> Self {
         Self::new()
@@ -593,4 +595,47 @@ impl<K: PartialOrd + fmt::Debug, V: fmt::Debug, const N: usize> fmt::Debug for T
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self.arena, f)
     }
+}
+
+// FIXME
+/*impl<K: PartialOrd, V, const N: usize> core::iter::IntoIterator for TinyMap<K, V, N> {
+    type Item = (K, V);
+    type Iterator = tinyvec::ArrayVecIterator<Self::Item>;
+
+    #[inline]
+    fn into_iter(self) -> Self::Iterator {
+        self.arena.into_iter()
+    }
+}*/
+
+impl<K: Ord, V, const N: usize> core::iter::Extend<(K, V)> for TinyMap<K, V, N> {
+    #[inline]
+    fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
+        iter.into_iter().for_each(|(k, v)| {
+            self.insert(k, v);
+        });
+    }
+}
+
+impl<K: Ord, V, const N: usize> core::iter::FromIterator<(K, V)> for TinyMap<K, V, N> {
+    #[inline]
+    fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+        let mut map = TinyMap::new();
+        map.extend(iter);
+        map
+    }
+}
+
+#[test]
+fn test_remove() {
+    let mut map: TinyMap<u32, u32, 25> = TinyMap::new();
+    for i in 0..25 {
+        map.insert(i, i);
+    }
+
+    for j in 10..15 {
+        map.remove(j);
+    }
+
+    let _test = map.get(16).unwrap();
 }
