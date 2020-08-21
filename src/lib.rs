@@ -634,8 +634,8 @@ fn test_remove() {
     }
 
     for j in 10..15 {
-        map.remove(j);
+        map.remove(&j);
     }
 
-    let _test = map.get(16).unwrap();
+    let _test = map.get(&16).unwrap();
 }
