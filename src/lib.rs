@@ -132,7 +132,13 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     /// assert_eq!(my_map.len(), 2);
     /// ```
     pub fn len(&self) -> usize {
-        self.arena.iter().filter(|n| n.is_some()).count()
+        self.arena
+            .iter()
+            .filter(|n| match n {
+                Some(_) => true,
+                None => false,
+            })
+            .count()
     }
 
     /// Check to see if there are any elements in this map.
@@ -145,7 +151,10 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     /// assert!(my_love_life.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.root.is_none()
+        match self.root {
+            Some(_) => false,
+            None => true,
+        }
     }
 
     #[must_use]
@@ -194,7 +203,7 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
             match current {
                 None => return None,
                 Some(val) => {
-                    let node = self.node_at_mut(val).expect("Invalid node tree");
+                    let node = self.node_at(val).expect("Invalid node tree");
                     current = match node.kv.0.partial_cmp(key) {
                         None => return None,
                         Some(Ordering::Equal) => {
@@ -225,6 +234,16 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
         match self.node_by_key_mut(key) {
             Some(node) => Some(&mut node.kv.1),
             None => None,
+        }
+    }
+
+    /// Tell whether or not this map contains a certain key.
+    #[must_use]
+    #[inline]
+    pub fn contains_key(&self, key: &K) -> bool {
+        match self.node_by_key(key) {
+            Some(_) => true,
+            None => false,
         }
     }
 
@@ -375,8 +394,10 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     where
         K: Ord,
     {
-        self.try_insert(key, value)
-            .unwrap_or_else(|_| panic!("Unable to push node into binary tree"))
+        match self.try_insert(key, value) {
+            Err(_) => panic!("Unable to push node into binary tree"),
+            Ok(res) => res,
+        }
     }
 
     /// Remove a node entry from the binary tree. This function returns the key-value pair
@@ -434,8 +455,9 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
                             mem::swap(&mut reloc_node, &mut self.arena[child2]);
 
                             // insert child2 under child1
-                            self.insert_from_root(reloc_node.unwrap(), child1)
-                                .unwrap_or_else(|_| panic!("This should not happen!"));
+                            if let Err(_) = self.insert_from_root(reloc_node.unwrap(), child1) {
+                                panic!("This should not happen!");
+                            }
 
                             // use child1 as the replacement node
                             Some(child1)
@@ -512,15 +534,12 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     /// Iterate over the elements of this binary tree in arbitrary order.
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
-        self.arena
-            .iter()
-            .filter(|node| node.is_some())
-            .filter_map(|node| match node.as_ref() {
-                None => None,
-                Some(Node {
-                    kv: (ref k, ref v), ..
-                }) => Some((k, v)),
-            })
+        self.arena.iter().filter_map(|node| match node.as_ref() {
+            None => None,
+            Some(Node {
+                kv: (ref k, ref v), ..
+            }) => Some((k, v)),
+        })
     }
 
     /// Iterate over the elements of this binary tree in arbitrary order, mutably.
@@ -540,13 +559,10 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     /// Iterate over the keys of this binary tree in arbitrary order.
     #[inline]
     pub fn keys(&self) -> impl Iterator<Item = &K> {
-        self.arena
-            .iter()
-            .filter(|node| node.is_some())
-            .filter_map(|node| match node.as_ref() {
-                None => None,
-                Some(Node { kv: (ref k, _), .. }) => Some(k),
-            })
+        self.arena.iter().filter_map(|node| match node.as_ref() {
+            None => None,
+            Some(Node { kv: (ref k, _), .. }) => Some(k),
+        })
     }
 
     /// Iterate over the values of this binary tree in arbitrary order.
@@ -563,7 +579,6 @@ impl<K: PartialOrd, V, const N: usize> TinyMap<K, V, N> {
     pub fn values_mut(&mut self) -> impl Iterator<Item = &mut V> {
         self.arena
             .iter_mut()
-            .filter(|node| node.is_some())
             .filter_map(|node| match node.as_mut() {
                 None => None,
                 Some(Node {
@@ -597,16 +612,15 @@ impl<K: PartialOrd + fmt::Debug, V: fmt::Debug, const N: usize> fmt::Debug for T
     }
 }
 
-// FIXME
-/*impl<K: PartialOrd, V, const N: usize> core::iter::IntoIterator for TinyMap<K, V, N> {
+impl<K: PartialOrd, V, const N: usize> core::iter::IntoIterator for TinyMap<K, V, N> {
     type Item = (K, V);
-    type Iterator = tinyvec::ArrayVecIterator<Self::Item>;
+    type Iterator = tinyvec::ArrayVecIterator<[Self::Item; N]>;
 
     #[inline]
     fn into_iter(self) -> Self::Iterator {
         self.arena.into_iter()
     }
-}*/
+}
 
 impl<K: Ord, V, const N: usize> core::iter::Extend<(K, V)> for TinyMap<K, V, N> {
     #[inline]
