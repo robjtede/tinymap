@@ -3,8 +3,7 @@
 //! A stack-based, fixed-size map that puts nodes on an array rather than the heap. See documentation
 //! for `TinyMap` for more information.
 
-#![allow(incomplete_features)]
-#![feature(const_generics)]
+#![feature(min_const_generics)]
 #![feature(const_in_array_repeat_expressions)]
 
 #![warn(clippy::pedantic)]
