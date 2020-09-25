@@ -1,5 +1,6 @@
 # tinymap
 
+[![Build Status](https://dev.azure.com/jtnunley01/gui-tools/_apis/build/status/not-a-seagull.tinymap?branchName=master)](https://dev.azure.com/jtnunley01/gui-tools/_build/latest?definitionId=9&branchName=master)
 [![crates.io](https://img.shields.io/crates/v/tinymap)](https://crates.io/crates/tinymap)
 [![docs.rs](https://docs.rs/tinymap/badge.svg)](https://docs.rs/tinymap)
 
