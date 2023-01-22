@@ -10,7 +10,7 @@ homepage = "https://github.com/notgull/tinymap#readme"
 
 [dependencies]
 hashbrown = { version = "0.8.2", optional = true }
-tinyvec = { version = "1.0.0", features = ["nightly_const_generics"] }
+tinyvec = { version = "1.6.0", features = ["rustc_1_55"] }
 
 [features]
 default = []

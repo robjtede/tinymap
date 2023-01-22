@@ -8,6 +8,8 @@ An implementation of a binary tree-based map that uses the `ArrayVec` from the `
 
 This project, similarly to `tinyvec`, also does not use any unsafe code. In addition, it requires a nightly version of the Rust compiler, as it relies on const generics.
 
+The minimum supported Rust version is **1.55.0**.
+
 # License
 
 This crate is dual-licensed under the Apache 2.0 License and the MIT license. Either can be used at your option.

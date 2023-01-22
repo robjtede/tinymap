@@ -107,7 +107,7 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
     #[inline]
     pub fn new() -> Self {
         Self {
-            arena: ArrayVec::from_array_len([None; N], 0),
+            arena: ArrayVec::new(),
             root: None,
         }
     }
