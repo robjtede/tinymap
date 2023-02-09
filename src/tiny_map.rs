@@ -28,7 +28,7 @@ use crate::array_map::{
 /// to port it over to a hash map-like implementation sometime in the next millennium. This
 /// structure may not be worth it to use.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```
 /// use tinymap::TinyMap;

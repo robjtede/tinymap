@@ -37,9 +37,9 @@ impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Node<K, V> {
 /// is nowhere near as efficient as the standard library `HashMap` implementation. The purpose of
 /// this structure is to offer an interface similar to `HashMap` to use in its place in `no_std` environments.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```rust
+/// ```
 /// use tinymap::ArrayMap;
 ///
 /// // Today, I'm making software for the lamp store. They want to match up a LampID to a
@@ -92,9 +92,9 @@ enum ChildType {
 impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
     /// Create a new [`ArrayMap`].
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # use tinymap::ArrayMap;
     /// #[derive(PartialOrd, Ord, PartialEq, Eq)]
     /// struct Foo;
@@ -115,7 +115,7 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # use tinymap::ArrayMap;
     /// #[derive(PartialOrd, Ord, PartialEq, Eq)]
     /// struct MyIndex(u32);
@@ -139,9 +139,9 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
 
     /// Check to see if there are any elements in this map.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # use tinymap::ArrayMap;
     /// let my_love_life: ArrayMap<&'static str, u32, 10> = ArrayMap::new();
     /// assert!(my_love_life.is_empty());
@@ -316,9 +316,9 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
     /// If the backing array is full, this function will return back the key-value pair passed
     /// in.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # use tinymap::ArrayMap;
     /// /// The representation of a mattress.
     /// #[derive(PartialOrd, Ord, PartialEq, Eq)]
@@ -372,9 +372,9 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
     ///
     /// Unlike `try_insert`, this function will panic if the backing array is full.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```rust, should_panic
+    /// ```should_panic
     /// # use tinymap::ArrayMap;
     /// /// Representation of a viking.
     /// struct Viking { kill_count: u32, body_count: u32, name: &'static str }
@@ -399,9 +399,9 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
     /// Remove a node entry from the binary tree. This function returns the key-value pair
     /// that was removed.
     ///
-    /// # Example
+    /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # use tinymap::ArrayMap;
     /// fn help_humans() { println!("Let's solve world hunger!"); }
     /// fn kill_humans() { panic!("Kill! Kill! Kill!"); }
@@ -503,7 +503,7 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # use tinymap::ArrayMap;
     /// struct Album { name: &'static str }
     ///
