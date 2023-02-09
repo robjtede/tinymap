@@ -67,6 +67,9 @@ jobs:
         with: { toolchain: nightly }
 
       - name: install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+
+      - name: install cargo-minimal
         uses: taiki-e/install-action@cargo-minimal-versions
 
       - name: minimal version check
