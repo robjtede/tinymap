@@ -1,32 +1,32 @@
-// MIT/Apache2 License
-
 //! Provides a map-like structure that can spill over into the heap if it overflows the stack. See
 //! documentation for [`TinyMap`] for more information.
 
-use super::array_map::{
-    ArrayMap, IntoIter as ArrayMapIntoIter, Iter as ArrayMapIter, IterMut as ArrayMapIterMut,
-    Keys as ArrayMapKeys, Values as ArrayMapValues, ValuesMut as ArrayMapValuesMut,
-};
 use core::{
     hash::Hash,
     iter::{Extend, FromIterator},
 };
+
 use hashbrown::hash_map::{
     HashMap, IntoIter as HashMapIntoIter, Iter as HashMapIter, IterMut as HashMapIterMut,
     Keys as HashMapKeys, Values as HashMapValues, ValuesMut as HashMapValuesMut,
 };
 
+use crate::array_map::{
+    ArrayMap, IntoIter as ArrayMapIntoIter, Iter as ArrayMapIter, IterMut as ArrayMapIterMut,
+    Keys as ArrayMapKeys, Values as ArrayMapValues, ValuesMut as ArrayMapValuesMut,
+};
+
 /// A map structure that will normally store its data on the stack unless it overflows to the heap.
 ///
-/// This object is an enum containing either an [`ArrayMap`](../array_map/struct.ArrayMap.html) or a
-/// [`hashbrown::HashMap`](https://docs.rs/hashbrown). If the `ArrayMap` is completely full, it will spill
-/// its elements into a `HashMap` contained on the heap.
+/// This object is an enum containing either an [`ArrayMap`](crate::array_map::ArrayMap) or a
+/// [`hashbrown::HashMap`](https://docs.rs/hashbrown). If the `ArrayMap` is completely full, it will
+/// spill its elements into a `HashMap` contained on the heap.
 ///
 /// # WARNING
 ///
-/// `ArrayMap` currently uses a relatively slow implementation involving a binary tree setup. I plan to port
-/// it over to a hash map-like implementation sometime in the next millenium. This structure may not be worth
-/// it to use.
+/// `ArrayMap` currently uses a relatively slow implementation involving a binary tree setup. I plan
+/// to port it over to a hash map-like implementation sometime in the next millennium. This
+/// structure may not be worth it to use.
 ///
 /// # Example
 ///

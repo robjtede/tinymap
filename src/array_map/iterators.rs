@@ -1,8 +1,8 @@
-// MIT/Apache2 License
+use core::slice;
+
+use tinyvec::ArrayVecIterator;
 
 use super::Node;
-use core::slice;
-use tinyvec::ArrayVecIterator;
 
 /// A non-consuming iterator for instances of `ArrayMap`.
 #[repr(transparent)]

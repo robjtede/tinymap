@@ -1,13 +1,12 @@
-// MIT/Apache2 License
+//! A stack-based, fixed-size map that puts nodes on an array rather than the heap. See
+//! documentation of [`ArrayMap`] for more information.
 
-//! A stack-based, fixed-size map that puts nodes on an array rather than the heap. See documentation
-//! of [`ArrayMap]` for more information.
+use core::{cmp::Ordering, fmt, iter, mem};
+
+use tinyvec::ArrayVec;
 
 mod iterators;
 pub use iterators::*;
-
-use core::{cmp::Ordering, fmt, iter, mem};
-use tinyvec::ArrayVec;
 
 // A node in the binary tree making up the map.
 pub(crate) struct Node<K, V> {
@@ -107,7 +106,7 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
     #[inline]
     pub fn new() -> Self {
         Self {
-            arena: ArrayVec::from_array_len([None; N], 0),
+            arena: ArrayVec::new(),
             root: None,
         }
     }
@@ -392,8 +391,8 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
         K: Ord,
     {
         match self.try_insert(key, value) {
-            Err(_) => panic!("Unable to push node into binary tree"),
             Ok(res) => res,
+            Err(_) => panic!("Unable to push node into binary tree"),
         }
     }
 
@@ -497,10 +496,7 @@ impl<K: PartialOrd, V, const N: usize> ArrayMap<K, V, N> {
     where
         K: Ord,
     {
-        match self.remove_entry(key) {
-            Some((_k, v)) => Some(v),
-            None => None,
-        }
+        self.remove_entry(key).map(|(_k, v)| v)
     }
 
     /// Clear out the binary tree.
