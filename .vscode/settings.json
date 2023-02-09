@@ -2,6 +2,7 @@
     "cSpell.words": [
         "clippy",
         "hashbrown",
+        "MSRV",
         "nextest",
         "powerset",
         "rustfmt",
