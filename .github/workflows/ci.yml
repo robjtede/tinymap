@@ -64,6 +64,7 @@ jobs:
 
       - name: install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1.3.5
+        with: { toolchain: nightly }
 
       - name: install cargo-hack
         uses: taiki-e/install-action@cargo-minimal-versions
