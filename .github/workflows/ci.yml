@@ -13,7 +13,7 @@ jobs:
       matrix:
         version:
           - stable
-          - 1.55.0 # MSRV
+          - 1.60.0 # MSRV
 
     name: ${{ matrix.version }}
     runs-on: ubuntu-latest

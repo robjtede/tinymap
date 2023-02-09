@@ -139,10 +139,7 @@ impl<K: PartialOrd + Eq + Hash, V, const N: usize> TinyMap<K, V, N> {
     where
         K: Ord,
     {
-        match self.remove_entry(key) {
-            Some((_k, v)) => Some(v),
-            None => None,
-        }
+        self.remove_entry(key).map(|(_k, v)| v)
     }
 
     /// Clear all entries from the map.
