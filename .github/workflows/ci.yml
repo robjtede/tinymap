@@ -5,6 +5,8 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches: [main]
+  schedule:
+    - cron: 0 0 * * 0
 
 jobs:
   build-and-test:
@@ -13,7 +15,7 @@ jobs:
       matrix:
         version:
           - stable
-          - 1.60.0 # MSRV
+          - 1.61.0 # MSRV
 
     name: ${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -69,7 +71,7 @@ jobs:
       - name: install cargo-hack
         uses: taiki-e/install-action@cargo-hack
 
-      - name: install cargo-minimal
+      - name: install cargo-minimal-versions
         uses: taiki-e/install-action@cargo-minimal-versions
 
       - name: minimal version check

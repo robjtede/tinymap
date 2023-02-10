@@ -9,7 +9,7 @@ edition = "2018"
 description = "A map structure that stores its data on the stack"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/robjtede/tinymap"
-rust-version = "1.60"
+rust-version = "1.61"
 
 [dependencies]
 hashbrown = { version = "0.13", optional = true }
